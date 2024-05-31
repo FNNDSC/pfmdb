@@ -17,7 +17,7 @@ services:
       MAX_WORKERS: 1
       SESSION_USERNAME: localuser
       MD_SESSIONUSER: localuser
-      MD_URI: mongodb://192.168.1.200:27017
+      MD_URI: mongodb://mongo:27017
       MD_USERNAME: admin
       MD_PASSWORD: admin
       LOGGING: CONSOLE
