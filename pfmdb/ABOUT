@@ -1,0 +1,3 @@
+`pfmdb` is a simple fastAPI interface to `pfmongo`, allowing a web-based interface to `pfmongo` functionality.
+
+API documentation is available at :8025/docs

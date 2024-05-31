@@ -1,0 +1,26 @@
+#
+# HOWTORUN
+#
+
+# Build (for fish shell syntax!)
+set UID (id -u)
+docker build --build-arg UID=$UID -t local/pfmdb .
+
+SESSIONUSER=localhost
+
+
+# For daemon, or background mode:
+docker run                                                          \ 
+        --env SESSIONUSER=$SESSIONUSER                              \
+        --name pfmdb  --rm -it -d                                   \
+        -p 8025:8025                                                \
+        local/pfmdb /start-reload.sh
+
+# Run with support for source debugging
+docker run                                                          \
+        --env SESSIONUSER=$SESSIONUSER                              \
+        --name pfmdb  --rm -it                                      \
+        -p 8025:8025                                                \
+        -v $PWD/pfmdb:/app:ro                                       \
+        local/pfmdb /start-reload.sh
+
