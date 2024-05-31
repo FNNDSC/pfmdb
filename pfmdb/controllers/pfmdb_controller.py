@@ -39,6 +39,10 @@ from pfmongo.models.responseModel import mongodbResponse
 from pfmongo.commands.dbop import showAll as db
 from argparse import Namespace
 
+from typing import Awaitable, Callable
+import queue
+import threading
+
 LOG = logger.debug
 
 logger_format = (
@@ -62,12 +66,30 @@ def noop():
     return {"status": True}
 
 
+def run_in_thread(func: Callable[..., Awaitable[mongodbResponse]]) -> mongodbResponse:
+    loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
+    q: queue.Queue = queue.Queue()
+
+    async def run_async() -> None:
+        result: mongodbResponse = await func()
+        q.put(result)
+
+    def thread_func() -> None:
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(run_async())
+
+    thread: threading.Thread = threading.Thread(target=thread_func)
+    thread.start()
+    result: mongodbResponse = q.get()
+    return result
+
+
 async def cmd_exec(
     cmd: str, database: str, collection: str
 ) -> iresponse.PfmongoResponse:
     resp: iresponse.PfmongoResponse = iresponse.PfmongoResponse()
     resp.stdout = smash.smash_execute(
-        f"--database {datebase} --collection {collection} {cmd}"
+        f"--database {database} --collection {collection} {cmd}"
     )
     return resp
 
