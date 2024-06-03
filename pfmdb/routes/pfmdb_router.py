@@ -69,7 +69,7 @@ async def pfmongo_databaseShowall() -> mongodbResponse:
     * `iresponse.PfmongoResponse`: the response from `pfmongo`
     """
     # resp: mongodbResponse = await pfmdb_controller.database_showall()
-    resp: mongodbResponse = pfmdb_controller.run_in_thread(
+    resp: mongodbResponse = pfmdb_controller.run_in_process(
         pfmdb_controller.database_showall
     )
     return resp
