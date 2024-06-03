@@ -42,8 +42,8 @@ from argparse import Namespace
 from typing import Awaitable, Callable
 import queue
 import threading
+import multiprocessing
 
-LOG = logger.debug
 
 logger_format = (
     "<green>{time:YYYY-MM-DD HH:mm:ss}</green> │ "
@@ -67,7 +67,8 @@ def noop():
 
 
 def run_in_thread(func: Callable[..., Awaitable[mongodbResponse]]) -> mongodbResponse:
-    loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
+    set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    # loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
     q: queue.Queue = queue.Queue()
 
     async def run_async() -> None:
@@ -80,6 +81,31 @@ def run_in_thread(func: Callable[..., Awaitable[mongodbResponse]]) -> mongodbRes
 
     thread: threading.Thread = threading.Thread(target=thread_func)
     thread.start()
+    result: mongodbResponse = q.get()
+    return result
+
+
+def process_func(
+    func: Callable[..., Awaitable[mongodbResponse]], q: multiprocessing.Queue
+) -> None:
+    # Get the current event loop policy and create a new instance
+    event_loop_policy = asyncio.get_event_loop_policy()
+    new_event_loop_policy = type(event_loop_policy)()
+    asyncio.set_event_loop_policy(new_event_loop_policy)
+
+    loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    result: mongodbResponse = loop.run_until_complete(func())
+    q.put(result)
+
+
+def run_in_process(func: Callable[..., Awaitable[mongodbResponse]]) -> mongodbResponse:
+    q: multiprocessing.Queue = multiprocessing.Queue()
+    process: multiprocessing.Process = multiprocessing.Process(
+        target=process_func, args=(func, q)
+    )
+    process.start()
+    process.join()  # Wait for the child process to finish
     result: mongodbResponse = q.get()
     return result
 
