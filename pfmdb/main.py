@@ -6,6 +6,7 @@ from routes.pfmdb_router import router as pfmdb_router
 from routes.credentialRouter import router as credential_router
 from os import path
 from config import settings
+from lib import jobController
 import pudb
 
 with open(path.join(path.dirname(path.abspath(__file__)), "ABOUT")) as f:
@@ -37,6 +38,10 @@ tags_metadata: list = [
             """,
     },
 ]
+shell: jobController.jobber = jobController.jobber({})
+d_resp: dict = shell.job_runFromScript(
+    "smashes --host localhost --port 8055 --server &"
+)
 
 # On startup, check if a vaultKey has been set by the environment,
 # and if so, check/lock the vault.
