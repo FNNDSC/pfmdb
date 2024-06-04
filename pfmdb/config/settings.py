@@ -13,7 +13,7 @@ Passwd = ForwardRef("Passwd")
 
 
 class AppData(BaseSettings):
-    appName: str = "pfchrs"
+    appName: str = "pfmdb"
     appAuthor: str = "FNNDSC"
     appConfigDir: Path = Path(pfd.user_config_dir(appName))
     appVaultKeyFile: Path = Path("key.txt")
