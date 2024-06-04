@@ -22,6 +22,7 @@ services:
       MD_PASSWORD: admin
       LOGGING: CONSOLE
     ports:
+      - "8055:8055"
       - "8025:8025"
       - "6900:6900"
     networks:
