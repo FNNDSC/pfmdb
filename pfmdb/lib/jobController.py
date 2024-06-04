@@ -167,7 +167,7 @@ class jobber:
             print("\nstderr: \n%s" % d_ret["stderr"])
         return d_ret
 
-    async def job_runFromScript(self, str_cmd: str) -> dict:
+    def job_runFromScript(self, str_cmd: str) -> dict:
         """run a job as a script (esp in the background).
 
         after much (probably unecessary pain) the best solution seemed to
