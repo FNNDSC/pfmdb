@@ -63,4 +63,4 @@ RUN echo '%localuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER localuser
 
 ENV PORT=8025
-EXPOSE ${PORT}
+EXPOSE ${PORT} 8055
