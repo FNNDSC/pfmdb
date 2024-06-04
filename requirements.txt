@@ -16,6 +16,6 @@ pydantic_settings
 platformdirs
 psutil
 pftag
-pfmongo>=0.9.108
+pfmongo>=0.9.114
 
 
