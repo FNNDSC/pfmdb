@@ -16,6 +16,7 @@ from pftag import pftag
 import pudb
 
 from pfmongo.models.responseModel import mongodbResponse
+from models.iresponse import SmashesResponse
 
 router = APIRouter()
 router.tags = ["pfmdb endpoints"]
@@ -51,13 +52,13 @@ async def pfmongo_cmdExec(
 
 
 @router.get(
-    "/pfmongo/database/showall",
-    response_model=mongodbResponse,
+    "/pfmongo/database",
+    response_model=SmashesResponse,
     summary="""
     GET the list of databases in the mongo server
     """,
 )
-async def pfmongo_databaseShowall() -> mongodbResponse:
+async def pfmongo_databaseShowall() -> SmashesResponse:
     """
     Description
     -----------
@@ -66,9 +67,9 @@ async def pfmongo_databaseShowall() -> mongodbResponse:
 
     Returns
     -------
-    * `iresponse.PfmongoResponse`: the response from `pfmongo`
+    * `iresponse.SmashesResponse`: the response from `pfmongo`
     """
-    resp: mongodbResponse = await pfmdb_controller.database_showall()
+    resp: SmashesResponse = pfmdb_controller.database_showall()
     # resp: mongodbResponse = pfmdb_controller.run_in_process(
     #     pfmdb_controller.database_showall
     # )
