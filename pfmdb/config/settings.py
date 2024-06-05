@@ -1,13 +1,13 @@
 import os
 from typing import Any, ClassVar, Type, ForwardRef
-from pydantic import AnyHttpUrl, AnyUrl
+from pydantic import AnyHttpUrl, AnyUrl, BaseModel
 from pydantic_settings import BaseSettings
 from pathlib import Path
 import platformdirs as pfd
 import json
 import pudb
 from models import credentialModel
-
+import multiprocessing
 
 Passwd = ForwardRef("Passwd")
 
@@ -26,6 +26,11 @@ class AppData(BaseSettings):
     def initialize(self):
         if not self.appConfigDir.exists():
             self.appConfigDir.mkdir(parents=True, exist_ok=True)
+
+
+class SmashesData(BaseSettings):
+    host: str = "localhost"
+    port: str = "8055"
 
 
 appData = AppData()
@@ -144,3 +149,4 @@ class PasswdMgr(BaseSettings):
 vault = Vault()
 vault.initialize()
 passwd = PasswdMgr()
+smashesData = SmashesData()
