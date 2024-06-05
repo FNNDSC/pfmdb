@@ -29,8 +29,8 @@ class AppData(BaseSettings):
 
 
 class SmashesData(BaseSettings):
-    host: str = "localhost"
-    port: str = "8055"
+    smashesHost: str = "localhost"
+    smashesPort: str = "8055"
 
 
 appData = AppData()
