@@ -7,6 +7,8 @@ from routes.credentialRouter import router as credential_router
 from os import path
 from config import settings
 from lib import jobController
+from models.iresponse import Smashes
+import multiprocessing
 import pudb
 
 with open(path.join(path.dirname(path.abspath(__file__)), "ABOUT")) as f:
@@ -38,14 +40,15 @@ tags_metadata: list = [
             """,
     },
 ]
-shell: jobController.jobber = jobController.jobber({})
-d_resp: dict = shell.job_runFromScript(
-    "smashes --host localhost --port 8055 --server &"
-)
 
 # On startup, check if a vaultKey has been set by the environment,
 # and if so, check/lock the vault.
 settings.vaultCheckLock(settings.vault)
+
+# Start the smashes server...
+smash = Smashes(server="--server")
+process: multiprocessing.Process = multiprocessing.Process(target=smash.run)
+process.start()
 
 app = FastAPI(title="pfmdb", version=str_version, openapi_tags=tags_metadata)
 
