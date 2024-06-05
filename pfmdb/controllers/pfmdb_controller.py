@@ -35,7 +35,7 @@ from pfmongo import pfmongo
 from pfmongo import __main__ as main
 from pfmongo.commands import smash
 from pfmongo.models.responseModel import mongodbResponse
-
+from pfmongo.pfmongo import options_initialize
 from pfmongo.commands.dbop import showAll as db
 from pfmongo import smashes
 from argparse import Namespace
@@ -72,7 +72,7 @@ def noop():
 
 def run_in_thread(func: Callable[..., Awaitable[mongodbResponse]]) -> mongodbResponse:
     set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
-    # loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
+    loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
     q: queue.Queue = queue.Queue()
 
     async def run_async() -> None:
@@ -114,22 +114,9 @@ def run_in_process(func: Callable[..., Awaitable[mongodbResponse]]) -> mongodbRe
     return result
 
 
-async def cmd_exec(
-    cmd: str, database: str, collection: str
-) -> iresponse.PfmongoResponse:
-    resp: iresponse.PfmongoResponse = iresponse.PfmongoResponse()
-    resp.stdout = smash.smash_execute(
-        f"--database {database} --collection {collection} {cmd}"
-    )
-    return resp
-
-
-def database_showall() -> SmashesResponse:
+def smashes_do(cmd: str) -> SmashesResponse:
     resp: SmashesResponse
-    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
-    smash: str | dict[str, str] = smashes.main(
-        Smashes(msg="database showall").cli_addMsg()
-    )
+    smash: str | dict[str, str] = smashes.main(Smashes(msg=cmd).cli_addMsg())
     if isinstance(smash, str):
         resp = SmashesResponse(response=smash)
     else:
@@ -137,9 +124,93 @@ def database_showall() -> SmashesResponse:
     return resp
 
 
+def cmd_exec(cmd: str, database: str, collection: str) -> SmashesResponse:
+    resp: SmashesResponse
+    if len(database.strip()):
+        resp = smashes_do(f"cd /{database}/{collection.strip()}")
+    else:
+        resp = smashes_do("cd /")
+
+    resp = smashes_do(cmd)
+    return resp
+
+
+def database_showall() -> SmashesResponse:
+    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    resp: SmashesResponse = smashes_do("database showall")
+    return resp
+
+
+def database_del(database: str) -> SmashesResponse:
+    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    resp: SmashesResponse
+    resp = smashes_do(f"rm /{database}")
+    return resp
+
+
+def collection_showall(database: str) -> SmashesResponse:
+    # set_trace(term_size=(254, 60), host="0.0.0.0", port=6900)
+    resp: SmashesResponse
+    resp = smashes_do(f"cd /{database}")
+    resp = smashes_do("collection showall")
+    return resp
+
+
+def document_showall(database: str, collection: str) -> SmashesResponse:
+    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    resp: SmashesResponse
+    resp = smashes_do(f"cd /{database}/{collection}")
+    resp = smashes_do("document showall")
+    return resp
+
+
+def collection_del(database: str, collection: str) -> SmashesResponse:
+    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    resp: SmashesResponse
+    resp = smashes_do(f"rm /{database}/{collection}")
+    return resp
+
+
+def collection_search(database: str, collection: str, term: str) -> SmashesResponse:
+    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    resp: SmashesResponse
+    resp = smashes_do(f"cd /{database}/{collection}")
+    resp = smashes_do(f"sg {term}")
+    return resp
+
+
+def document_get(database: str, collection: str, document: str) -> SmashesResponse:
+    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    resp: SmashesResponse
+    resp = smashes_do(f"cat /{database}/{collection}/{document}")
+    return resp
+
+
+def document_del(database: str, collection: str, document: str) -> SmashesResponse:
+    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    resp: SmashesResponse
+    resp = smashes_do(f"rm /{database}/{collection}/{document}")
+    return resp
+
+
+# async def database_showall() -> iresponse.PfmongoResponse:
+#     # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+#     set_trace(term_size=(254, 60), host="0.0.0.0", port=6900)
+#     resp: iresponse.PfmongoResponse = iresponse.PfmongoResponse()
+#     mdbOptions: Namespace = options_initialize()
+#     response = smash.smash_execute(
+#         smash.command_parse(
+#             smash.command_get(mdbOptions, noninteractive="database showall")
+#         )
+#     )
+#     smashResp: str | bytes = response
+#     resp.stdout = smashResp
+#     return resp
+
+
 async def baseHelp_get() -> iresponse.PfmongoResponse:
     resp: iresponse.PfmongoResponse = iresponse.PfmongoResponse()
-    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    # set_trace(term_size=(254, 60), host="0.0.0.0", port=6900)
     smashResp: str | bytes = smash.smash_execute("--help")
     resp.stdout = smashResp
     return resp
