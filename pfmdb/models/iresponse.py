@@ -6,11 +6,12 @@ from pydantic import BaseModel, Field
 import pudb
 from pfmongo import smashes
 from config.settings import smashesData
+from pudb.remote import set_trace
 
 
 class Smashes(BaseModel):
-    host: str = Field(default=smashesData.host)
-    port: str = Field(default="8055")
+    host: str = Field(default=smashesData.smashesHost)
+    port: str = Field(default=smashesData.smashesPort)
     msg: str = Field(default="")
     server: str = Field(default="")
 
