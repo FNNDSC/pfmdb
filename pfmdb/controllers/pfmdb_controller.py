@@ -37,7 +37,11 @@ from pfmongo.commands import smash
 from pfmongo.models.responseModel import mongodbResponse
 
 from pfmongo.commands.dbop import showAll as db
+from pfmongo import smashes
 from argparse import Namespace
+
+from models.iresponse import SmashesResponse
+from models.iresponse import Smashes
 
 from typing import Awaitable, Callable
 import queue
@@ -120,11 +124,16 @@ async def cmd_exec(
     return resp
 
 
-async def database_showall() -> mongodbResponse:
-    set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
-    options: Namespace = pfmongo.options_initialize()
-    # options.eventLoopDebug = True
-    resp: mongodbResponse = db.showAll_asModel(db.options_add(options))
+def database_showall() -> SmashesResponse:
+    resp: SmashesResponse
+    # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+    smash: str | dict[str, str] = smashes.main(
+        Smashes(msg="database showall").cli_addMsg()
+    )
+    if isinstance(smash, str):
+        resp = SmashesResponse(response=smash)
+    else:
+        resp = SmashesResponse(response=smash["response"])
     return resp
 
 
