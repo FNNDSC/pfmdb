@@ -7,6 +7,8 @@
 #
 import asyncio
 
+from pfmongo.commands.smash import command_get, command_parse, smash_execute_async
+
 # from pydantic_core.core_schema import ExpectedSerializationTypes
 from models import iresponse, credentialModel
 import os
@@ -22,6 +24,7 @@ from argparse import Namespace, ArgumentParser
 import sys
 from loguru import logger
 import shutil
+import re
 
 import tempfile
 from pathlib import Path
@@ -33,7 +36,8 @@ from starlette.responses import FileResponse
 
 from pfmongo import pfmongo
 from pfmongo import __main__ as main
-from pfmongo.commands import smash
+
+# from pfmongo.pfmongo.commands import smash
 from pfmongo.models.responseModel import mongodbResponse
 from pfmongo.pfmongo import options_initialize
 from pfmongo.commands.dbop import showAll as db
@@ -114,7 +118,7 @@ def run_in_process(func: Callable[..., Awaitable[mongodbResponse]]) -> mongodbRe
     return result
 
 
-def smashes_do(cmd: str) -> SmashesResponse:
+async def smashes_do(cmd: str) -> SmashesResponse:
     resp: SmashesResponse
     smash: str | dict[str, str] = smashes.main(Smashes(msg=cmd).cli_addMsg())
     if isinstance(smash, str):
@@ -124,21 +128,101 @@ def smashes_do(cmd: str) -> SmashesResponse:
     return resp
 
 
-def cmd_exec(cmd: str, database: str, collection: str) -> SmashesResponse:
+async def smash_do(cmd: str) -> SmashesResponse:
+    resp: SmashesResponse = SmashesResponse(response="")
+    options: Namespace = options_initialize()
+    smash: str | bytes = await smash_execute_async(
+        command_parse(await command_get(options, noninteractive=cmd))
+    )
+    if isinstance(smash, str):
+        resp = SmashesResponse(response=smash)
+    elif isinstance(smash, bytes):
+        resp = SmashesResponse(response=smash.decode())
+    return resp
+
+
+def winToNix_path(cmd: str) -> str:
+    """
+    Any cmd from the client that contains a windows style '\\'
+    has this replaced with '/'
+    """
+    return re.sub(r"\\(?!\\)", "/", cmd)
+
+
+async def cmd_exec(
+    cmd: str, database: str, collection: str, handler: str
+) -> SmashesResponse:
+    # set_trace(term_size=(254, 60), host="0.0.0.0", port=6900)
     resp: SmashesResponse
+    path: str = ""
+    cmd = winToNix_path(cmd)
+
     if len(database.strip()):
-        resp = smashes_do(f"cd /{database}/{collection.strip()}")
+        path += database.strip()
+    if len(collection.strip()) and len(path):
+        path += f"/{collection.strip()}"
+
+    f_handler: Callable[[str], Awaitable[SmashesResponse]]
+    if "smashes" in handler.lower():
+        f_handler = smashes_do
     else:
-        resp = smashes_do("cd /")
+        f_handler = smash_do
 
-    resp = smashes_do(cmd)
+    if len(path):
+        resp = await f_handler(f"cd {path}")
+
+    resp = await f_handler(cmd)
     return resp
 
 
-def database_showall() -> SmashesResponse:
+async def process(
+    func: Callable[[Namespace], Awaitable[mongodbResponse]],
+    setup: Callable[[Namespace], Namespace],
+    cmd: str,
+    rettype: str,
+) -> mongodbResponse | SmashesResponse:
+    respMongo: mongodbResponse = mongodbResponse()
+    respSmash: SmashesResponse
+    match rettype.lower():
+        case "smash":
+            respSmash = await smash_do(cmd)
+            return respSmash
+        case "smashes":
+            respSmash = await smashes_do(cmd)
+            return respSmash
+        case _:
+            respMongo = await func(setup(options))
+            return respMongo
+
+
+async def database_showall(
+    rettype: str = "smash",
+) -> mongodbResponse | SmashesResponse:
     # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
-    resp: SmashesResponse = smashes_do("database showall")
-    return resp
+    # set_trace(term_size=(254, 60), host="0.0.0.0", port=6900)
+    return await process(
+        db.showAll_asModel, db.options_add, "database showall", rettype
+    )
+    # respMongo: mongodbResponse = mongodbResponse()
+    # respSmash: SmashesResponse
+    # options: Namespace = options_initialize()
+    # options.eventLoopDebug = True
+    # match rettype.lower():
+    #     case "smash":
+    #         respSmash = await smash_do(options, "database showall")
+    #         return respSmash
+    #     case "smashes":
+    #         respSmash = smashes_do("database showall")
+    #         return respSmash
+    #     case _:
+    #         respMongo = await db.showAll_asModel(db.options_add(options))
+    #         return respMongo
+
+
+# def database_showall() -> SmashesResponse:
+#     # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
+#     resp: SmashesResponse = smashes_do("database showall")
+#     return resp
 
 
 def database_del(database: str) -> SmashesResponse:
@@ -191,21 +275,6 @@ def document_del(database: str, collection: str, document: str) -> SmashesRespon
     resp: SmashesResponse
     resp = smashes_do(f"rm /{database}/{collection}/{document}")
     return resp
-
-
-# async def database_showall() -> iresponse.PfmongoResponse:
-#     # set_trace(term_size=(381, 95), host="0.0.0.0", port=6900)
-#     set_trace(term_size=(254, 60), host="0.0.0.0", port=6900)
-#     resp: iresponse.PfmongoResponse = iresponse.PfmongoResponse()
-#     mdbOptions: Namespace = options_initialize()
-#     response = smash.smash_execute(
-#         smash.command_parse(
-#             smash.command_get(mdbOptions, noninteractive="database showall")
-#         )
-#     )
-#     smashResp: str | bytes = response
-#     resp.stdout = smashResp
-#     return resp
 
 
 async def baseHelp_get() -> iresponse.PfmongoResponse:
