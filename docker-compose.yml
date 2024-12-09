@@ -11,6 +11,7 @@ services:
     container_name: pfmdb
     volumes:
       - ./pfmdb:/app
+      - /home/rudolph/src/pfmongo/pfmongo:/usr/local/lib/python3.11/site-packages/pfmongo
     command: /start-reload.sh
     environment:
       MAX_WORKERS: 1
