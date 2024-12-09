@@ -1,6 +1,6 @@
 from os import walk
 from shutil import ignore_patterns
-from fastapi import APIRouter, Query, HTTPException, BackgroundTasks, Request
+from fastapi import APIRouter, Query, HTTPException, BackgroundTasks, Request, Path
 from fastapi import File, UploadFile, Path, Form
 from typing import List, Dict, Any, Union, Annotated
 
@@ -19,21 +19,23 @@ from pudb.remote import set_trace
 from pfmongo.models.responseModel import mongodbResponse
 from models.iresponse import SmashesResponse
 
+
 router = APIRouter()
 router.tags = ["pfmdb endpoints"]
 
 
 @router.post(
-    "/pfmongo/smashes/{cmd}",
+    "/pfmongo/cli/{cmd}",
     response_model=iresponse.SmashesResponse,
     summary="""
     POST a command to pfmongo smashes.
     """,
 )
 async def pfmongo_cmdExec(
-    cmd: str,
+    cmd: str = Path(..., encode_value_as_path=True),
     database: str = "",
     collection: str = "",
+    handler: str = "smash",
 ) -> iresponse.SmashesResponse:
     """
     Description
@@ -41,13 +43,17 @@ async def pfmongo_cmdExec(
 
     POST a command to a `pfmongo` smash app and return its response.
 
+    `handler` specifies the handling layer to service the call:
+    * `smash` - use interal calls to `smash`
+    * `smashes` - use a remote IPC call to an embedded smash server
+
     Returns
     -------
-    * `iresponse.SmashesResponse`: The response from `smashes`.
+    * `iresponse.SmashesResponse`: The `smash(es)` response.
     """
-    # pudb.set_trace()
-    resp: iresponse.SmashesResponse = pfmdb_controller.cmd_exec(
-        cmd, database, collection
+    # set_trace(term_size=(254, 60), host="0.0.0.0", port=6900)
+    resp: iresponse.SmashesResponse = await pfmdb_controller.cmd_exec(
+        cmd, database, collection, handler
     )
 
     return resp
@@ -55,12 +61,14 @@ async def pfmongo_cmdExec(
 
 @router.get(
     "/pfmongo",
-    response_model=SmashesResponse,
+    response_model=mongodbResponse | SmashesResponse,
     summary="""
     GET the list of databases in the mongo server
     """,
 )
-async def pfmongo_databaseShowall() -> SmashesResponse:
+async def pfmongo_databaseShowall(
+    rettype: str = "mongo",
+) -> mongodbResponse | SmashesResponse:
     """
     Description
     -----------
@@ -69,12 +77,14 @@ async def pfmongo_databaseShowall() -> SmashesResponse:
 
     Returns
     -------
-    * `iresponse.SmashesResponse`: the response from `pfmongo`
+    * `rettype=smash: SmashesResponse`: a short response returned from `smash`ing the call directly
+    * `rettype=smashes: SmashesResponse`: a short response returned from `smash`ing the call to a smashes server
+    * `rettype=<anythingElse>`: mongodbResponse`: a detailed response
     """
-    resp: SmashesResponse = pfmdb_controller.database_showall()
-    # resp: mongodbResponse = pfmdb_controller.run_in_process(
-    #     pfmdb_controller.database_showall
-    # )
+
+    resp: mongodbResponse | SmashesResponse = await pfmdb_controller.database_showall(
+        rettype
+    )
     return resp
 
 
